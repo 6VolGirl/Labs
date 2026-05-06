@@ -1,6 +1,6 @@
 
 import numpy as np
-from BaseMethod import NumericalMethod
+from ...BaseMethod import NumericalMethod
 
 class DirectMethodBase(NumericalMethod):
     """
