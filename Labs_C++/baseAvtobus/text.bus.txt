@@ -1,0 +1,9 @@
+1, Petrovshchina, Brest, top, 23
+32, Kirmash, market, super, 78
+006, Park, Vilnus, norm, 23
+116, market, Titanium, super, 78
+75, Park, Petrovshchina, top, 78
+104, Malinovka, Brest, bad, 78
+53, Kurgan, Kirmash, like, 23
+klisfakejrhi
+ggg, qqq, aaa, zzz, 1
