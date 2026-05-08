@@ -1,5 +1,7 @@
 import numpy as np
 from ODEMethodBase import ODEMethodBase
+import sys
+sys.path.append ("C:\\Users\\6anna\\PycharmProjects\\Labs\\Numerical_methods\\Numerical_methods_classes\\Nonlinear_Equations")
 from NewtonMethod import NewtonMethod
 from RungeKuttaMethod import RungeKuttaMethod
 

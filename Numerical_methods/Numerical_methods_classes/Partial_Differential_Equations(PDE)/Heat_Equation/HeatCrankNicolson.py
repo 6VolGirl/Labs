@@ -1,6 +1,9 @@
 import numpy as np
 
+import sys
+sys.path.append ("C:\\Users\\6anna\\PycharmProjects\\Labs\\Numerical_methods\\Numerical_methods_classes\\Partial_Differential_Equations(PDE)")
 from PDEMethodBase import PDEMethodBase
+sys.path.append ("C:\\Users\\6anna\\PycharmProjects\\Labs\\Numerical_methods\\Numerical_methods_classes\\\Linear_Systems\Direct_Methods")
 from TridiagonalMatrixAlgorithm import TridiagonalMatrixAlgorithm
 
 

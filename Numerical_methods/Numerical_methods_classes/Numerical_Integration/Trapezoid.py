@@ -1,5 +1,7 @@
 import numpy as np
-from ..IntegrationMethodBase import IntegrationMethodBase
+import sys
+sys.path.append ("C:\\Users\\6anna\\PycharmProjects\\Labs\\Numerical_methods\\Numerical_methods_classes")
+from IntegrationMethodBase import IntegrationMethodBase
 
 class Trapezoid(IntegrationMethodBase):
     """ Метод трапеции для интегрирования определённых интегралов """

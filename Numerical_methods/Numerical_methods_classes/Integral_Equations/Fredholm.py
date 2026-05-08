@@ -1,5 +1,7 @@
 import numpy as np
-from ..IntegralEquationMethodBase import IntegralEquationMethodBase
+import sys
+sys.path.append ("C:\\Users\\6anna\\PycharmProjects\\Labs\\Numerical_methods\\Numerical_methods_classes")
+from IntegralEquationMethodBase import IntegralEquationMethodBase
 from Numerical_Integration.Trapezoid import Trapezoid
 from Numerical_Integration.GaussQuardratute import GaussQuadrature
 

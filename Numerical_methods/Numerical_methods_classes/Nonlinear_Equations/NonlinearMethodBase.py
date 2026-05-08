@@ -1,5 +1,7 @@
 import numpy as np
-from ..BaseMethod import NumericalMethod
+import sys
+sys.path.append ("C:\\Users\\6anna\\PycharmProjects\\Labs\\Numerical_methods\\Numerical_methods_classes")
+from BaseMethod import NumericalMethod
 
 class NonlinearMethodBase(NumericalMethod):
     """Базовый класс для методов решения нелинейных уравнений"""
