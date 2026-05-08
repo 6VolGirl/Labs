@@ -1,5 +1,7 @@
 import numpy as np
-from Numerical_methods_classes.IterativeMethodBase import IterativeMethodBase
+import sys
+sys.path.append ("C:\\Users\\6anna\\PycharmProjects\\Labs\\Numerical_methods\\Numerical_methods_classes")
+from IterativeMethodBase import IterativeMethodBase
 
 
 class SimpleIteration(IterativeMethodBase):
