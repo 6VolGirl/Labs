@@ -199,15 +199,20 @@ void Mesh::finalize() {
 void Mesh::addBoundaryPatch(const std::string& name,
                             const std::vector<int>& faceIds,
                             BoundaryType type) {
+    for (int fid : faceIds) {
+        const auto& f = faces.at(fid);
+        if (!f.isBoundary()) {
+            throw std::runtime_error("Only boundary faces can be added to boundary patches");
+        }
+        if (!f.patchName.empty()) {
+            throw std::runtime_error("Boundary face already belongs to patch: " + f.patchName);
+        }
+    }
+
     boundaryPatches[name] = BoundaryPatch{name, faceIds, type};
 
     for (int fid : faceIds) {
         auto& f = faces.at(fid);
-
-        if (!f.isBoundary()) {
-            throw std::runtime_error("Only boundary faces can be added to boundary patches");
-        }
-
         f.patchName = name;
         f.boundaryType = type;
     }

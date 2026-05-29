@@ -38,6 +38,9 @@ FvMatrix AdvectionDiffusionAssembler::assemble(const ScalarTransportProblem& pro
         M.rhs(P) += problem.coefficients.sourceAt(xP, yP) * cell.area;
     }
 
+    const bool isUpwind = (dynamic_cast<const UpwindScheme*>(scheme) != nullptr);
+
+
     for (const auto& face : mesh.faces) {
         const int P = face.owner;
         const auto U = problem.coefficients.velocityAt(face.center[0], face.center[1]);
@@ -52,25 +55,18 @@ FvMatrix AdvectionDiffusionAssembler::assemble(const ScalarTransportProblem& pro
         if (face.neighbour.has_value()) {
             const int N = *face.neighbour;
 
-            if (dynamic_cast<const UpwindScheme*>(scheme) != nullptr) {
-                if (F >= 0.0) {
-                    M.coeff(P, P) += F + D;
-                    M.coeff(P, N) += -D;
-                    M.coeff(N, N) += D;
-                    M.coeff(N, P) += -F - D;
-                } else {
-                    M.coeff(P, P) += D;
-                    M.coeff(P, N) += F - D;
-                    M.coeff(N, N) += -F + D;
-                    M.coeff(N, P) += -D;
-                }
-            } else {
-                const double phiFWeight = 0.5;
-                M.coeff(P, P) += std::max(F, 0.0) + D;
-                M.coeff(P, N) += std::min(F, 0.0) - D;
-                M.coeff(N, N) += std::max(-F, 0.0) + D;
-                M.coeff(N, P) += std::min(-F, 0.0) - D;
-                (void)phiFWeight;
+            M.coeff(P, P) += std::max(F, 0.0) + D;
+            M.coeff(P, N) += std::min(F, 0.0) - D;
+            M.coeff(N, N) += std::max(-F, 0.0) + D;
+            M.coeff(N, P) += std::min(-F, 0.0) - D;
+
+            if (!isUpwind) {
+                const double phiF_upwind = (F >= 0.0) ? problem.phi[P] : problem.phi[N];
+                const double phiF_high = scheme->faceValue(face, problem.phi, problem.coefficients);
+                const double corr = F * (phiF_high - phiF_upwind);
+
+                M.rhs(P) -= corr;
+                M.rhs(N) += corr;
             }
         } else {
             if (!boundaryConditions->has(face.patchName)) {

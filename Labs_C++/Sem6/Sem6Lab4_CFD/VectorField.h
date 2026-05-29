@@ -14,7 +14,9 @@
 #include <vector>
 
 namespace cfd {
-
+    // VectorField — векторное поле на сетке.
+    // Хранит в каждой точке вектор Vec2.
+    // Подходит, например, для хранения поля скорости в ячейках или на гранях.
     class VectorField {
     public:
         geom::Mesh* mesh{};

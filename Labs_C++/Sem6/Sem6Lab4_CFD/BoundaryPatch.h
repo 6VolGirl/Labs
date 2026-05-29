@@ -10,7 +10,8 @@
 #include <vector>
 
 namespace geom {
-
+    // BoundaryType — тип граничного участка.
+    // Используется для различения внутренних граней и физических границ
     enum class BoundaryType {
         Interior, // внутренняя грань
         Generic,  // граничная грань
@@ -20,6 +21,8 @@ namespace geom {
         //Symmetry
     };
 
+    // BoundaryPatch — именованный участок границы.
+    // Объединяет набор граничных граней с одинаковым физическим смыслом
     class BoundaryPatch {
     public:
         std::string name;

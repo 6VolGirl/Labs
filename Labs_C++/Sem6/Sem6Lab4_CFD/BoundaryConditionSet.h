@@ -15,7 +15,10 @@
 #include <unordered_map>
 
 namespace cfd {
-
+    // BoundaryConditionSet — набор граничных условий для разных boundary patch-ей.
+    // Хранит отображение "имя patch-а -> граничное условие".
+    // Используется сборщиком уравнения для поиска нужного условия
+    // по имени patchName у граничной грани.
     class BoundaryConditionSet {
     public:
         std::unordered_map<std::string, std::shared_ptr<BoundaryCondition>> conditions;

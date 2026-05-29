@@ -12,6 +12,10 @@
 
 namespace cfd {
 
+    // AdvectionDiffusionAssembler — сборщик дискретного уравнения
+    // конвекции-диффузии для скалярного поля.
+    // По заданной сетке, коэффициентам переноса, схеме интерполяции
+    // и граничным условиям формирует матрицу FvMatrix.
     class AdvectionDiffusionAssembler {
     public:
         const FaceInterpolationScheme* scheme{};

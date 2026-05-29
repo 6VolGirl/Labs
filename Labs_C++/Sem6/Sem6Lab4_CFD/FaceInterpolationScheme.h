@@ -12,7 +12,10 @@
 
 
 namespace cfd {
-
+    // FaceInterpolationScheme — базовый интерфейс схемы интерполяции
+    // значения скалярного поля на грани.
+    // По геометрии грани, полю phi и транспортным коэффициентам
+    // схема должна вернуть значение phi_f на грани.
     class FaceInterpolationScheme {
     public:
         virtual ~FaceInterpolationScheme() = default;

@@ -8,6 +8,12 @@
 namespace cfd {
 
     void BoundaryConditionSet::add(const std::shared_ptr<BoundaryCondition>& bc) {
+        if (!bc) {
+            throw std::runtime_error("Cannot add null boundary condition");
+        }
+        if (conditions.contains(bc->patchName)) {
+            throw std::runtime_error("Boundary condition already exists for patch: " + bc->patchName);
+        }
         conditions[bc->patchName] = bc;
     }
 
