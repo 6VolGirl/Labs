@@ -1,25 +1,74 @@
 cmake_minimum_required(VERSION 3.30)
-project(Sem6Lab4_CFD)
+
+project(Sem6Lab4_CFD LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(Sem6Lab4_CFD
+# --------------------------------
+# Общие файлы, которые лежат в корне
+# --------------------------------
+add_library(cfd_core STATIC
         ScalarField.cpp
         VectorField.cpp
-        TransportCoefficients.cpp
-        ScalarTransportProblem.cpp
         BoundaryCondition.cpp
         BoundaryConditionSet.cpp
         FvMatrix.cpp
-        UpwindScheme.cpp
-        TvdScheme.cpp
         LinearSolver.cpp
-        AdvectionDiffusionAssembler.cpp
         Vec2.cpp
         Mesh.cpp
         Face.cpp
         Cell.cpp
         Vertex.cpp
         BoundaryPatch.cpp
-        QuickScheme.cpp
-        main.cpp)
+)
+
+target_include_directories(cfd_core
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# --------------------------------
+# Лаба 3a
+# --------------------------------
+add_executable(nmph_laba_3a
+        nmph_laba_3a/TransportCoefficients.cpp
+        nmph_laba_3a/ScalarTransportProblem.cpp
+        nmph_laba_3a/UpwindScheme.cpp
+        nmph_laba_3a/TvdScheme.cpp
+        nmph_laba_3a/QuickScheme.cpp
+        nmph_laba_3a/AdvectionDiffusionAssembler.cpp
+        nmph_laba_3a/main_3a.cpp
+)
+
+target_include_directories(nmph_laba_3a
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/nmph_laba_3a
+)
+
+target_link_libraries(nmph_laba_3a
+        PRIVATE
+        cfd_core
+)
+
+# --------------------------------
+# Лаба 3b
+# --------------------------------
+add_library(lab3b_base STATIC
+        nmph_laba_3b/ConstantInletProfile.cpp
+        nmph_laba_3b/PoiseuilleInletProfile.cpp
+        nmph_laba_3b/NavierStokesProblem.cpp
+)
+
+target_include_directories(lab3b_base
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/nmph_laba_3b
+)
+
+target_link_libraries(lab3b_base
+        PUBLIC
+        cfd_core
+)
