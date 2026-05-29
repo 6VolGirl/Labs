@@ -13,9 +13,11 @@ namespace cfd {
     class TvdScheme : public FaceInterpolationScheme {
     public:
         LimiterType limiter{LimiterType::VanLeer};
+        bool boundFaceValue{true};
 
         TvdScheme() = default;
         explicit TvdScheme(LimiterType limiter_);
+        TvdScheme(LimiterType limiter_, bool boundFaceValue_);
 
         double faceValue(const geom::Face& face,
                          const ScalarField& phi,

@@ -3,6 +3,7 @@
 //
 
 #include "UpwindScheme.h"
+#include "SchemeStencilUtils.h"
 #include "Vec2.h"
 
 namespace cfd {
@@ -10,18 +11,20 @@ namespace cfd {
     double UpwindScheme::faceValue(const geom::Face& face,
                                    const ScalarField& phi,
                                    const TransportCoefficients& coeffs) const {
-        const auto U = coeffs.velocityAt(face.center[0], face.center[1]);
-        const double F = geom::dot(U, face.normal) * face.length;
+        const double F = detail::faceMassFlux(face, coeffs);
 
-        if (F >= 0.0) {
+        if (!face.neighbour.has_value()) {
             return phi[face.owner];
         }
 
-        if (face.neighbour.has_value()) {
+        if (F > 1e-14) {
+            return phi[face.owner];
+        }
+        if (F < -1e-14) {
             return phi[*face.neighbour];
         }
 
-        return phi[face.owner];
+        return 0.5 * (phi[face.owner] + phi[*face.neighbour]);
     }
 
 } // namespace cfd

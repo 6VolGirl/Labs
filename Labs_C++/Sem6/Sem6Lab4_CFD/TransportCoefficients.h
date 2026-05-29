@@ -17,6 +17,12 @@ using ScalarFunction = std::function<double(double, double)>;
 // Функция для векторного коэффициента от координат (x, y)
 using VectorFunction = std::function<geom::Vec2(double, double)>;
 
+// TransportCoefficients — набор физических коэффициентов
+// для уравнения конвекции-диффузии.
+// Хранит плотность rho, коэффициент диффузии gamma,
+// источник source и поле скорости velocity.
+// Каждый коэффициент может быть либо константой,
+// либо функцией координат (x, y).
 class TransportCoefficients {
 public:
     // Плотность rho = 1.
