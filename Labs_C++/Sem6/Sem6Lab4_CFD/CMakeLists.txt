@@ -56,19 +56,20 @@ target_link_libraries(nmph_laba_3a
 # --------------------------------
 # Лаба 3b
 # --------------------------------
-add_library(lab3b_base STATIC
+add_executable(nmph_laba_3b
+        nmph_laba_3b/main_3b.cpp
         nmph_laba_3b/ConstantInletProfile.cpp
         nmph_laba_3b/PoiseuilleInletProfile.cpp
         nmph_laba_3b/NavierStokesProblem.cpp
 )
 
-target_include_directories(lab3b_base
-        PUBLIC
+target_include_directories(nmph_laba_3b
+        PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/nmph_laba_3b
 )
 
-target_link_libraries(lab3b_base
-        PUBLIC
+target_link_libraries(nmph_laba_3b
+        PRIVATE
         cfd_core
 )
