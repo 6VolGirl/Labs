@@ -3,27 +3,23 @@
 //
 
 #include "PoiseuilleInletProfile.h"
-
+#include <algorithm>
+#include <stdexcept>
 
 namespace cfd3b {
 
-    PoiseuilleInletProfile::PoiseuilleInletProfile(double halfHeight, double uMax)
-        : h_(halfHeight), umax_(uMax) {
-    }
-
     double PoiseuilleInletProfile::value(double, double y) const {
-        if (h_ <= 0.0) {
+        if (channelHeight <= 0.0) {
+            throw std::runtime_error("PoiseuilleInletProfile: channelHeight must be positive");
+        }
+
+        const double eta = y / channelHeight;
+
+        if (eta < 0.0 || eta > 1.0) {
             return 0.0;
         }
 
-        const double eta = y / h_;
-        const double profile = 1.0 - eta * eta;
-
-        if (profile <= 0.0) {
-            return 0.0;
-        }
-
-        return umax_ * profile;
+        return 1.5 * meanVelocity * (1.0 - eta * eta);
     }
 
 } // namespace cfd3b

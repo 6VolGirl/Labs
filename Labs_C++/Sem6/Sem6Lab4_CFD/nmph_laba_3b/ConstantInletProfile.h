@@ -15,13 +15,15 @@ namespace cfd3b {
     // Профиль входной скорости с постоянным значением по всей высоте канала
     // на inlet задаётся одна и та же скорость
     class ConstantInletProfile : public InletProfile {
+    private:
+        double u0_{0.0};
+
     public:
         explicit ConstantInletProfile(double uIn);
 
         double value(double x, double y) const override;
 
-    private:
-        double u0_{0.0};
+
     };
 
 } // namespace cfd3b
