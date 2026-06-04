@@ -19,8 +19,16 @@ namespace cfd3b {
         double momentumRelaxation{0.7};
         double pressureRelaxation{0.3};
 
+        // Критерии остановки
         double velocityTolerance{1e-8};
+        double pressureTolerance{1e-8};
         double continuityTolerance{1e-8};
+
+        // Защита от деления на очень маленькие числа
+        double small{1e-14};
+
+        // Как часто печатать лог
+        int logFrequency{10};
     };
 
 } // namespace cfd3b
