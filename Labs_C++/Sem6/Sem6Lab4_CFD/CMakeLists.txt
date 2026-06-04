@@ -61,7 +61,21 @@ add_executable(nmph_laba_3b
         nmph_laba_3b/ConstantInletProfile.cpp
         nmph_laba_3b/PoiseuilleInletProfile.cpp
         nmph_laba_3b/NavierStokesProblem.cpp
+        nmph_laba_3b/VelocityBoundaryCondition.cpp
+        nmph_laba_3b/VelocityBoundaryConditionSet.cpp
+        nmph_laba_3b/PressureBoundaryCondition.cpp
+        nmph_laba_3b/PressureBoundaryConditionSet.cpp
+        nmph_laba_3b/FaceMassFluxCalculator.cpp
+        nmph_laba_3b/MomentumEquationAssembler.cpp
+        nmph_laba_3b/PressureCorrectionAssembler.cpp
+        nmph_laba_3b/SimplecSolver.cpp
+        nmph_laba_3b/FlowFieldWriter.cpp
+        nmph_laba_3b/ChannelProfileExtractor.cpp
+        nmph_laba_3b/ChannelComparisonWriter.cpp
+        nmph_laba_3b/FlowFieldWriter.cpp
+        nmph_laba_3b/StudySummaryWriter.cpp
 )
+
 
 target_include_directories(nmph_laba_3b
         PRIVATE
