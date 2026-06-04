@@ -1,135 +1,220 @@
-//
-// Created by 6anna on 29.05.2026.
-//
-
+#include <algorithm>
+#include <cmath>
 #include <iostream>
-#include <memory>
 #include <string>
+#include <vector>
 
 #include "Mesh.h"
 #include "Vec2.h"
 
-#include "ChannelCaseConfig.h"
-#include "FlowRunConfig.h"
-#include "InletProfile.h"
+#include "NavierStokesProblem.h"
+#include "VelocityBoundaryCondition.h"
+#include "VelocityBoundaryConditionSet.h"
+#include "PressureBoundaryCondition.h"
+#include "PressureBoundaryConditionSet.h"
+
+#include "SimplecSettings.h"
+#include "SimplecSolver.h"
+
 #include "ConstantInletProfile.h"
 #include "PoiseuilleInletProfile.h"
-#include "NavierStokesProblem.h"
-#include "SimplecSettings.h"
+
+#include "FlowFieldWriter.h"
+#include "ChannelProfileExtractor.h"
+#include "ChannelComparisonWriter.h"
 
 namespace {
 
-void printCaseInfo(const cfd3b::ChannelCaseConfig& cfg,
-                   const cfd3b::FlowRunConfig& runCfg,
-                   const cfd3b::SimplecSettings& settings,
-                   const geom::Mesh& mesh) {
-    std::cout << "=== 3B test case ===\n";
-    std::cout << "Case name           : " << runCfg.caseName << "\n";
-    std::cout << "Cells               : " << mesh.cells.size() << "\n";
-    std::cout << "Faces               : " << mesh.faces.size() << "\n";
-    std::cout << "Channel length      : " << cfg.length << "\n";
-    std::cout << "Channel half-height : " << cfg.halfHeight << "\n";
-    std::cout << "rho                 : " << cfg.rho << "\n";
-    std::cout << "mu                  : " << cfg.mu << "\n";
-    std::cout << "u_in                : " << cfg.inletVelocity << "\n";
-    std::cout << "p_out               : " << cfg.outletPressure << "\n";
-    std::cout << "SIMPLEC max iters   : " << settings.maxIterations << "\n";
-    std::cout << std::endl;
-}
+    enum class InletMode {
+        Constant,
+        Poiseuille
+    };
 
-void assignInitialVelocityFromProfile(cfd3b::NavierStokesProblem& problem,
-                                      const cfd3b::InletProfile& profile) {
-    if (!problem.mesh) {
-        return;
+    std::string inletModeName(InletMode mode) {
+        return mode == InletMode::Constant ? "constant" : "poiseuille";
     }
 
-    for (std::size_t i = 0; i < problem.mesh->cells.size(); ++i) {
-        const auto& cell = problem.mesh->cells[i];
-        const double x = cell.center[0];
-        const double y = cell.center[1];
-        const double u = profile.value(x, y);
+    double averagePressureAtSection(const cfd3b::NavierStokesProblem& problem, double xSection) {
+        const auto profile = cfd3b::ChannelProfileExtractor::extractVerticalLine(problem, xSection);
 
-        problem.U[i] = geom::Vec2{u, 0.0};
-        problem.Ustar[i] = geom::Vec2{u, 0.0};
+        if (profile.empty()) {
+            return 0.0;
+        }
+
+        double sum = 0.0;
+        for (const auto& s : profile) {
+            sum += s.p;
+        }
+
+        return sum / static_cast<double>(profile.size());
     }
-}
 
-void printSampleValues(const geom::Mesh& mesh,
-                       const cfd3b::NavierStokesProblem& problem,
-                       const cfd3b::InletProfile& constantProfile,
-                       const cfd3b::InletProfile& poiseuilleProfile,
-                       double halfHeight) {
-    std::cout << "=== Profile samples ===\n";
-    std::cout << "Constant inlet at y = 0      : " << constantProfile.value(0.0, 0.0) << "\n";
-    std::cout << "Poiseuille inlet at y = 0    : " << poiseuilleProfile.value(0.0, 0.0) << "\n";
-    std::cout << "Poiseuille inlet at y = h/2  : " << poiseuilleProfile.value(0.0, 0.5 * halfHeight) << "\n";
-    std::cout << "Poiseuille inlet at y = h    : " << poiseuilleProfile.value(0.0, halfHeight) << "\n";
-    std::cout << std::endl;
+    void runSingleCase(const std::string& caseName,
+                       InletMode inletMode,
+                       double length,
+                       double height,
+                       int nx,
+                       int ny,
+                       double rho,
+                       double mu,
+                       double meanInletU) {
+        geom::Mesh mesh = geom::Mesh::structuredRectangle(nx, ny, length, height);
 
-    if (!mesh.cells.empty()) {
-        const std::size_t first = 0;
-        const std::size_t mid = mesh.cells.size() / 2;
-        const std::size_t last = mesh.cells.size() - 1;
+        cfd3b::NavierStokesProblem problem(mesh, rho, mu, caseName);
+        problem.setUniformVelocity(geom::Vec2{meanInletU, 0.0});
+        problem.setUniformPressure(0.0);
+        problem.resetPressureCorrection();
 
-        std::cout << "=== Field samples ===\n";
-        std::cout << "U[first] = (" << problem.U[first][0] << ", " << problem.U[first][1] << ")\n";
-        std::cout << "U[mid]   = (" << problem.U[mid][0] << ", " << problem.U[mid][1] << ")\n";
-        std::cout << "U[last]  = (" << problem.U[last][0] << ", " << problem.U[last][1] << ")\n";
-        std::cout << "p[first] = " << problem.p[first] << "\n";
-        std::cout << "pCorr[mid] = " << problem.pCorr[mid] << "\n";
-        std::cout << std::endl;
+        cfd3b::VelocityBoundaryConditionSet velocityBcs;
+        cfd3b::PressureBoundaryConditionSet pressureBcs;
+
+        cfd3b::ConstantInletProfile constantProfile(meanInletU);
+        cfd3b::PoiseuilleInletProfile poiseuilleProfile(meanInletU, height);
+
+        if (inletMode == InletMode::Constant) {
+            velocityBcs.set(
+                cfd3b::VelocityBoundaryCondition(
+                    cfd3b::VelocityBoundaryConditionType::Dirichlet,
+                    "left",
+                    [&constantProfile](double x, double y) {
+                        return geom::Vec2{constantProfile.value(x, y), 0.0};
+                    }
+                )
+            );
+        } else {
+            velocityBcs.set(
+                cfd3b::VelocityBoundaryCondition(
+                    cfd3b::VelocityBoundaryConditionType::Dirichlet,
+                    "left",
+                    [&poiseuilleProfile](double x, double y) {
+                        return geom::Vec2{poiseuilleProfile.value(x, y), 0.0};
+                    }
+                )
+            );
+        }
+
+        velocityBcs.set(
+            cfd3b::VelocityBoundaryCondition::constant(
+                cfd3b::VelocityBoundaryConditionType::Dirichlet,
+                "top",
+                geom::Vec2{0.0, 0.0}
+            )
+        );
+
+        velocityBcs.set(
+            cfd3b::VelocityBoundaryCondition::constant(
+                cfd3b::VelocityBoundaryConditionType::Dirichlet,
+                "bottom",
+                geom::Vec2{0.0, 0.0}
+            )
+        );
+
+        velocityBcs.set(
+            cfd3b::VelocityBoundaryCondition::constant(
+                cfd3b::VelocityBoundaryConditionType::Neumann,
+                "right",
+                geom::Vec2{0.0, 0.0}
+            )
+        );
+
+        pressureBcs.set(
+            cfd3b::PressureBoundaryCondition::constant(
+                cfd3b::PressureBoundaryConditionType::Dirichlet,
+                "right",
+                0.0
+            )
+        );
+
+        pressureBcs.set(
+            cfd3b::PressureBoundaryCondition::constant(
+                cfd3b::PressureBoundaryConditionType::Neumann,
+                "left",
+                0.0
+            )
+        );
+
+        pressureBcs.set(
+            cfd3b::PressureBoundaryCondition::constant(
+                cfd3b::PressureBoundaryConditionType::Neumann,
+                "top",
+                0.0
+            )
+        );
+
+        pressureBcs.set(
+            cfd3b::PressureBoundaryCondition::constant(
+                cfd3b::PressureBoundaryConditionType::Neumann,
+                "bottom",
+                0.0
+            )
+        );
+
+        cfd3b::SimplecSettings settings;
+        settings.maxIterations = 200;
+        settings.velocityTolerance = 1e-6;
+        settings.pressureTolerance = 1e-6;
+        settings.continuityTolerance = 1e-7;
+        settings.momentumRelaxation = 0.3;
+        settings.pressureRelaxation = 0.15;
+        settings.logFrequency = 10;
+
+        cfd3b::SimplecSolver solver(velocityBcs, pressureBcs, settings);
+        solver.solve(problem);
+
+        const auto& st = solver.state();
+
+        const double xProfile = 0.9 * length;
+        const auto profile = cfd3b::ChannelProfileExtractor::extractVerticalLine(problem, xProfile);
+
+        const double pIn = averagePressureAtSection(problem, 0.1 * length);
+        const double pOut = averagePressureAtSection(problem, 0.9 * length);
+        const double dpdx = (length > 0.0) ? (pOut - pIn) / (0.8 * length) : 0.0;
+
+        const std::string prefix = caseName + "_" + inletModeName(inletMode);
+
+        cfd3b::FlowFieldWriter::writeCellFieldCsv(problem, prefix + "_field.csv");
+        cfd3b::ChannelComparisonWriter::writeProfileComparisonCsv(
+            profile,
+            height,
+            meanInletU,
+            prefix + "_profile.csv"
+        );
+
+        std::cout << "\n=== " << prefix << " ===\n";
+        std::cout << "iterations = " << st.iteration << '\n';
+        std::cout << "uResidual = " << st.uResidual << '\n';
+        std::cout << "vResidual = " << st.vResidual << '\n';
+        std::cout << "pResidual = " << st.pResidual << '\n';
+        std::cout << "continuityResidual = " << st.continuityResidual << '\n';
+        std::cout << "converged = " << std::boolalpha << st.converged << '\n';
+        std::cout << "pIn = " << pIn << ", pOut = " << pOut << '\n';
+        std::cout << "saved: " << prefix << "_field.csv\n";
+        std::cout << "saved: " << prefix << "_profile.csv\n";
     }
-}
 
 } // namespace
 
 int main() {
-    cfd3b::ChannelCaseConfig caseCfg;
-    caseCfg.nx = 20;
-    caseCfg.ny = 10;
-    caseCfg.length = 6.0;
-    caseCfg.halfHeight = 1.0;
-    caseCfg.rho = 1.0;
-    caseCfg.mu = 0.1;
-    caseCfg.inletVelocity = 1.0;
-    caseCfg.outletPressure = 0.0;
-    caseCfg.inletType = cfd3b::InletProfileType::Constant;
+    try {
+        const double rho = 1.0;
+        const double mu = 0.001;
+        const double length = 8.0;
+        const double height = 1.0;
+        const double meanInletU = 1.0;
+        const int nx = 40;
+        const int ny = 20;
 
-    cfd3b::FlowRunConfig runCfg;
-    runCfg.caseName = "channel_3b_class_test";
 
-    cfd3b::SimplecSettings simplec;
-    simplec.maxIterations = 100;
-    simplec.momentumRelaxation = 0.7;
-    simplec.pressureRelaxation = 0.3;
+        runSingleCase("case_L4", InletMode::Constant,
+                      length, height, nx, ny, rho, mu, meanInletU);
 
-    geom::Mesh mesh = geom::Mesh::structuredRectangle(
-        caseCfg.nx,
-        caseCfg.ny,
-        caseCfg.length,
-        2.0 * caseCfg.halfHeight
-    );
-
-    cfd3b::NavierStokesProblem problem(mesh, caseCfg.rho, caseCfg.mu);
-
-    cfd3b::ConstantInletProfile constantProfile(caseCfg.inletVelocity);
-    cfd3b::PoiseuilleInletProfile poiseuilleProfile(caseCfg.halfHeight,
-                                                    1.5 * caseCfg.inletVelocity);
-
-    const cfd3b::InletProfile* activeProfile = nullptr;
-    if (caseCfg.inletType == cfd3b::InletProfileType::Constant) {
-        activeProfile = &constantProfile;
-    } else {
-        activeProfile = &poiseuilleProfile;
+        // runSingleCase("case_L4", InletMode::Poiseuille,
+        //               length, height, nx, ny, rho, mu, meanInletU);
     }
-
-    assignInitialVelocityFromProfile(problem, *activeProfile);
-
-    printCaseInfo(caseCfg, runCfg, simplec, mesh);
-    printSampleValues(mesh, problem, constantProfile, poiseuilleProfile, caseCfg.halfHeight);
-
-    std::cout << "NavierStokesProblem cell count: " << problem.cellCount() << "\n";
-    std::cout << "3B class test finished successfully.\n";
+    catch (const std::exception& ex) {
+        std::cerr << "Error: " << ex.what() << '\n';
+        return 1;
+    }
 
     return 0;
 }
