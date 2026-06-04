@@ -8,8 +8,10 @@ namespace cfd3b {
 
     NavierStokesProblem::NavierStokesProblem(geom::Mesh& mesh_,
                                              double rho_,
-                                             double mu_)
+                                             double mu_,
+                                             const std::string& name_)
         : mesh(&mesh_),
+          name(name_),
           U(mesh_, "U"),
           Ustar(mesh_, "Ustar"),
           p(mesh_, "p"),
@@ -33,5 +35,19 @@ namespace cfd3b {
         p.fill(0.0);
         pCorr.fill(0.0);
     }
+
+    void NavierStokesProblem::setUniformVelocity(const geom::Vec2& value) {
+        U.fill(value);
+        Ustar.fill(value);
+    }
+
+    void NavierStokesProblem::setUniformPressure(double value) {
+        p.fill(value);
+    }
+
+    void NavierStokesProblem::resetPressureCorrection() {
+        pCorr.fill(0.0);
+    }
+
 
 } // namespace cfd3b
