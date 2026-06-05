@@ -39,6 +39,9 @@
 
 *.png
 *.txt
+__pycache__/
+*.pyc
+*.bkp
 
 # Debug information files
 *.dwo
